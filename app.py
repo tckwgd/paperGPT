@@ -9,6 +9,8 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from htmlTemplates import css, bot_template, user_template
 from langchain.llms import HuggingFaceHub
+import bibtexparser
+from bibtexparser.bibdatabase import BibDatabase
 
 def get_pdf_text(pdf_docs):
     text = ""
@@ -17,6 +19,18 @@ def get_pdf_text(pdf_docs):
         for page in pdf_reader.pages:
             text += page.extract_text()
     return text
+
+def get_bibtex_entries(bib_docs):
+    entries = []
+    for bib in bib_docs:
+        bib_content = bib.read().decode()
+        parser = bibtexparser.bparser.BibTexParser(common_strings=True)
+        bib_database = bibtexparser.loads(bib_content, parser=parser)
+        for entry in bib_database.entries:
+            db = BibDatabase()
+            db.entries = [entry]
+            entries.append(bibtexparser.dumps(db))
+    return entries
 
 
 def get_text_chunks(text):
@@ -38,7 +52,7 @@ def get_vectorstore(text_chunks):
 
 
 def get_conversation_chain(vectorstore):
-    llm = ChatOpenAI()
+    llm = ChatOpenAI(model_name="gpt-4")
     # llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature":0.5, "max_length":512})
 
     memory = ConversationBufferMemory(
@@ -82,15 +96,15 @@ def main():
 
     with st.sidebar:
         st.subheader("Your documents")
-        pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+        bib_docs = st.file_uploader(
+            "Upload your BibTeX files here and click on 'Process'", type=["bib"], accept_multiple_files=True)
         if st.button("Process"):
             with st.spinner("Processing"):
                 # get pdf text
-                raw_text = get_pdf_text(pdf_docs)
+                bibtex_entries = get_bibtex_entries(bib_docs)
 
                 # get the text chunks
-                text_chunks = get_text_chunks(raw_text)
+                text_chunks = get_text_chunks("\n".join(bibtex_entries))
 
                 # create vector store
                 vectorstore = get_vectorstore(text_chunks)
