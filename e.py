@@ -91,7 +91,7 @@ def main():
 
     if bib_docs:
         bibtex_entries = get_bibtex_entries(bib_docs)
-        paper_requirements = st.text_area(label="输入您的论文要求:", label_visibility='hidden')
+        paper_requirements = st.text_area(label="输入您的论文要求:")
 
         if "previous_content" not in st.session_state:
             st.session_state.previous_content = {}
