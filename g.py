@@ -4,7 +4,41 @@ from dotenv import load_dotenv
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase
 import os
+import requests
+from bs4 import BeautifulSoup
 
+def search_articles(query, num_results=10):
+    BASE_URL = "https://scholar.google.com/scholar"
+    HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36"
+    }
+    params = {"q": query, "hl": "en", "num": num_results}
+    response = requests.get(BASE_URL, params=params, headers=HEADERS)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    results = []
+    for entry in soup.find_all("div", class_="gs_r gs_or gs_scl"):
+        title = entry.find("h3", class_="gs_rt").text
+        h3_element = entry.find("h3", class_="gs_rt")
+        
+        if h3_element and h3_element.a:
+            link = h3_element.a["href"]
+        else:
+            link = None  # 或者可以设定其他默认值或者选择跳过这个条目
+            
+        # We'll assume the bibtex link is the last link in the .gs_fl class
+        try:
+            bibtex_link = BASE_URL + entry.find_all("a", class_="gs_fl")[2]["href"]
+            bibtex = requests.get(bibtex_link, headers=HEADERS).text
+        except:
+            bibtex = ""
+        results.append({
+            "title": title,
+            "link": link,
+            "bibtex": bibtex
+        })
+
+    return results
 
 def get_bibtex_entries(bib_docs):
     entries = []
@@ -83,46 +117,8 @@ def generate_paper_part(part_name, paper_requirements, bibtex_entries, previous_
     if word_limit:
         prompt += f'，请输出{word_limit}字'
     print(prompt)
-    
-    answer = generate_response_with_chat_model(prompt, model)
+    return generate_response_with_chat_model(prompt, model)
 
-    # 在生成每一部分之后，立即将它显示出来
-    st.subheader(part_name.capitalize())
-    st.write(answer)
-
-    return answer
-
-def generate_entire_paper(paper_requirements, bibtex_entries, model, word_limits):
-    entire_paper = {}
-    
-    entire_paper["introduction"] = generate_paper_part("introduction", paper_requirements, bibtex_entries, word_limit=word_limits["introduction"], model=model)
-    
-    entire_paper["creation"] = []
-    for i in range(word_limits["creation_parts_count"]):
-        creation_content = generate_paper_part("creation", paper_requirements, bibtex_entries, entire_paper, word_limit=word_limits["creation"][i], model=model)
-        entire_paper["creation"].append(creation_content)
-        
-    entire_paper["related_work"] = generate_paper_part("related_work", paper_requirements, bibtex_entries, entire_paper, word_limit=word_limits["related_work"], model=model)
-    
-    entire_paper["method"] = []
-    for i in range(word_limits["method_parts_count"]):
-        method_content = generate_paper_part("method", paper_requirements, bibtex_entries, entire_paper, word_limit=word_limits["method"][i], index=i, model=model)
-        entire_paper["method"].append(method_content)
-    
-    entire_paper["conclusion"] = generate_paper_part("conclusion", paper_requirements, bibtex_entries, entire_paper, word_limit=word_limits["conclusion"], model=model)
-    
-    entire_paper["discussion"] = generate_paper_part("discussion", paper_requirements, bibtex_entries, entire_paper, word_limit=word_limits["discussion"], model=model)
-    
-    entire_paper["abstract"] = generate_paper_part("abstract", paper_requirements, bibtex_entries, entire_paper, word_limit=word_limits["abstract"], model=model)
-    
-    # 参考文献的处理方式略有不同，按照你之前的方法，我将其分成两部分生成
-    midpoint = len(bibtex_entries) // 2
-    first_half = bibtex_entries[:midpoint]
-    second_half = bibtex_entries[midpoint:]
-    entire_paper["reference_first"] = generate_paper_part("reference", paper_requirements, first_half, entire_paper, model=model)
-    entire_paper["reference_second"] = generate_paper_part("reference", paper_requirements, second_half, entire_paper, model=model)
-    
-    return entire_paper
 
 def main():
     load_dotenv()
@@ -130,24 +126,35 @@ def main():
 
     st.set_page_config(page_title="交互式论文生成器", page_icon=":books:")
     st.write("### 交互式论文生成器 :books:")
-    st.markdown("""
-<style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-</style>
-""", unsafe_allow_html=True)
-
+    
     with st.sidebar:
         # 添加模型选择功能
-        model_mapping = {
-            "gpt4": "gpt-4",
-            "gpt3": "gpt-3.5-turbo-16k"
-        }
+        model_options = ["gpt-4", "gpt-3.5-turbo-16k"]
+        selected_model = st.selectbox("选择您的模型:", model_options)
         
-        user_options = list(model_mapping.keys())
-        user_selected = st.selectbox("选择您的模型:", user_options)
-        selected_model = model_mapping[user_selected]
-
+    with st.sidebar:
+        st.subheader("文章搜索")
+        search_query = st.text_input("请输入搜索词:")
+        search_button = st.button("搜索文章")
+        if search_button and search_query:
+            search_results = search_articles(search_query)
+            article_titles = [result["title"] for result in search_results]
+            selected_articles_indices = st.multiselect("选择要处理的文章:", list(range(len(article_titles))), format_func=lambda x: article_titles[x])
+            
+            # 初始化bib_docs为空列表
+            bib_docs = []
+            
+            # 将选中文章的BibTeX添加到列表中
+            for index in selected_articles_indices:
+                selected_article = search_results[index]
+                if selected_article["bibtex"]:
+                    bib_docs.append(selected_article["bibtex"])
+                else:
+                    st.write(f"无法获取选定文章 {selected_article['title']} 的BibTeX条目。")
+            
+            if bib_docs:
+                bibtex_entries = get_bibtex_entries(bib_docs)
+                        
     with st.sidebar:
         st.subheader("您的文档")
         bib_docs = st.file_uploader("在此上传您的BibTeX文件:", type=["bib"], accept_multiple_files=True)
@@ -264,51 +271,7 @@ footer {visibility: hidden;}
             formatted_reference_second = generate_paper_part("reference", paper_requirements, second_half, st.session_state.previous_content, model=selected_model)
             st.write(formatted_reference_second)
 
-        # 将“一键生成论文”的按钮放在左侧
-        if st.button("一键生成论文"):
-            # 为简化，我们在这里为各部分定义一个默认的字数限制
-            word_limits = {
-                "introduction": 500,
-                "creation_parts_count": 3,
-                "creation": [500, 500, 500],  # 三个创新点部分的字数限制
-                "related_work": 500,
-                "method_parts_count": 3,
-                "method": [500, 500, 500],  # 三个方法部分的字数限制
-                "conclusion": 500,
-                "discussion": 500,
-                "abstract": 300
-            }
-            paper_content = generate_entire_paper(paper_requirements, bibtex_entries, selected_model, word_limits)
 
-            # Step 3: 将生成的文章部分显示在 Streamlit 的界面上
-            st.subheader("介绍")
-            st.write(paper_content["introduction"])
-            
-            for i, creation in enumerate(paper_content["creation"]):
-                st.subheader(f"创新点 - 部分 {i+1}")
-                st.write(creation)
-            
-            st.subheader("相关工作")
-            st.write(paper_content["related_work"])
-            
-            for i, method in enumerate(paper_content["method"]):
-                st.subheader(f"方法 - 部分 {i+1}")
-                st.write(method)
-                
-            st.subheader("结论")
-            st.write(paper_content["conclusion"])
-            
-            st.subheader("讨论")
-            st.write(paper_content["discussion"])
-            
-            st.subheader("摘要")
-            st.write(paper_content["abstract"])
-            
-            st.subheader("参考文献 - 第一部分")
-            st.write(paper_content["reference_first"])
-            
-            st.subheader("参考文献 - 第二部分")
-            st.write(paper_content["reference_second"])
 
 if __name__ == '__main__':
     main()
