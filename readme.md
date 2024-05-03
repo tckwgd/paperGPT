@@ -1,65 +1,57 @@
-# MultiPDF Chat App
+# Interactive Paper Generator
 
-> You can find the tutorial for this project on [YouTube](https://youtu.be/dXxQ0LR-3Hg).
+The Interactive Paper Generator is a tool based on the OpenAI GPT model that assists in the rapid generation of various sections of academic papers. It allows users to generate sections such as introductions, innovations, related work, methodology, conclusions, discussions, abstracts, and references tailored to specific requirements.
 
-## Introduction
-------------
-The MultiPDF Chat App is a Python application that allows you to chat with multiple PDF documents. You can ask questions about the PDFs using natural language, and the application will provide relevant responses based on the content of the documents. This app utilizes a language model to generate accurate answers to your queries. Please note that the app will only respond to questions related to the loaded PDFs.
+## Features
 
-## How It Works
-------------
+- **Multiple GPT Model Support**: Choose between GPT-3 and GPT-4 models for generating text.
+- **BibTeX Integration**: Upload your BibTeX files to include precise citations directly within your generated papers.
+- **Customizable Section Generation**: Set word limits and generate specific sections individually.
+- **Complete Paper Generation**: Option to generate an entire paper with one click using default word limits.
+- **Editable Outputs**: Generated texts can be edited within the application to refine and tailor the output further.
 
-![MultiPDF Chat App Diagram](./docs/PDF-LangChain.jpg)
+## Getting Started
 
-The application follows these steps to provide responses to your questions:
+### Prerequisites
 
-1. PDF Loading: The app reads multiple PDF documents and extracts their text content.
+Before you begin using the Interactive Paper Generator, ensure you have your BibTeX files ready for the references you intend to use.
 
-2. Text Chunking: The extracted text is divided into smaller chunks that can be processed effectively.
+### Installation
 
-3. Language Model: The application utilizes a language model to generate vector representations (embeddings) of the text chunks.
+Clone the repository to your local machine:
 
-4. Similarity Matching: When you ask a question, the app compares it with the text chunks and identifies the most semantically similar ones.
-
-5. Response Generation: The selected chunks are passed to the language model, which generates a response based on the relevant content of the PDFs.
-
-## Dependencies and Installation
-----------------------------
-To install the MultiPDF Chat App, please follow these steps:
-
-1. Clone the repository to your local machine.
-
-2. Install the required dependencies by running the following command:
-   ```
-   pip install -r requirements.txt
-   ```
-
-3. Obtain an API key from OpenAI and add it to the `.env` file in the project directory.
-```commandline
-OPENAI_API_KEY=your_secrit_api_key
+```bash
+git clone https://github.com/yourusername/interactive-paper-generator.git
+cd interactive-paper-generator
 ```
 
-## Usage
------
-To use the MultiPDF Chat App, follow these steps:
+### Usage
 
-1. Ensure that you have installed the required dependencies and added the OpenAI API key to the `.env` file.
+1. **Upload BibTeX File**: Navigate to the 'Upload Your BibTeX File Here:' section in the application's left sidebar to upload your files.
 
-2. Run the `main.py` file using the Streamlit CLI. Execute the following command:
-   ```
-   streamlit run app.py
-   ```
+2. **Select Model**: Choose either the GPT-3 or GPT-4 model from the left sidebar.
 
-3. The application will launch in your default web browser, displaying the user interface.
+3. **Input Paper Requirements**: Enter your specific paper requirements in the provided text box to guide the content generation process.
 
-4. Load multiple PDF documents into the app by following the provided instructions.
+4. **Generate Sections**: Set the word limit for each section and click the corresponding button (e.g., 'Generate Introduction') to produce content.
 
-5. Ask questions in natural language about the loaded PDFs using the chat interface.
+5. **Edit and Save**: The generated content can be edited on the right-hand side of the interface. Once finalized, the content can be copied and saved to a local document for further processing.
 
 ## Contributing
-------------
-This repository is intended for educational purposes and does not accept further contributions. It serves as supporting material for a YouTube tutorial that demonstrates how to build this project. Feel free to utilize and enhance the app based on your own requirements.
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+Please refer to the `CONTRIBUTING.md` for more information.
 
 ## License
--------
-The MultiPDF Chat App is released under the [MIT License](https://opensource.org/licenses/MIT).
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## Acknowledgements
+
+- OpenAI GPT Models
+- [Google Scholar](https://scholar.google.com/)
+- [IEEE Xplore](https://ieeexplore.ieee.org/)
+- [ACM Digital Library](https://dl.acm.org/)
+- [Web of Science](https://www.webofscience.com/)
+- Other listed databases and tools that facilitate academic research
